@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Always-On AI Assistant</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #1c2128;
+            --bg-card: #21262d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --border: #30363d;
+            --accent: #58a6ff;
+            --accent-hover: #79c0ff;
+            --accent-muted: #1f6feb33;
+            --green: #3fb950;
+            --orange: #d29922;
+            --red: #f85149;
+            --purple: #bc8cff;
+            --sidebar-width: 300px;
+            --header-height: 60px;
+            --code-bg: #161b22;
+            --code-border: #30363d;
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f6f8fa;
+            --bg-tertiary: #f0f2f5;
+            --bg-card: #ffffff;
+            --text-primary: #1f2328;
+            --text-secondary: #656d76;
+            --text-muted: #8b949e;
+            --border: #d0d7de;
+            --accent: #0969da;
+            --accent-hover: #0550ae;
+            --accent-muted: #0969da1a;
+            --green: #1a7f37;
+            --orange: #9a6700;
+            --red: #cf222e;
+            --purple: #8250df;
+            --code-bg: #f6f8fa;
+            --code-border: #d0d7de;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; scroll-padding-top: calc(var(--header-height) + 20px); }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .header-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: var(--accent-muted);
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            display: inline-block;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+
+        .btn:hover { background: var(--bg-card); border-color: var(--text-muted); }
+
+        .menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 6px;
+        }
+
+        /* Layout */
+        .layout {
+            display: flex;
+            margin-top: var(--header-height);
+            min-height: calc(100vh - var(--header-height));
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 16px 0;
+            z-index: 50;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-section {
+            padding: 0 16px;
+            margin-bottom: 16px;
+        }
+
+        .sidebar-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            padding: 8px 0;
+        }
+
+        .nav-item {
+            display: block;
+            padding: 6px 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13px;
+            border-radius: 6px;
+            transition: all 0.15s;
+            cursor: pointer;
+        }
+
+        .nav-item:hover { color: var(--text-primary); background: var(--bg-tertiary); }
+        .nav-item.active { color: var(--accent); background: var(--accent-muted); }
+        .nav-item.level-2 { padding-left: 24px; font-size: 12px; }
+        .nav-item.level-3 { padding-left: 36px; font-size: 12px; color: var(--text-muted); }
+
+        .search-box {
+            margin: 0 16px 16px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 8px 12px 8px 32px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+        }
+
+        .search-box input:focus { border-color: var(--accent); }
+
+        .search-box::before {
+            content: "⌕";
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 32px 48px;
+            max-width: calc(100% - var(--sidebar-width));
+            min-width: 0;
+        }
+
+        .content {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* Tab Navigation */
+        .tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 32px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s;
+        }
+
+        .tab:hover { color: var(--text-primary); }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Markdown Rendering */
+        .markdown-body h1 {
+            font-size: 2em;
+            font-weight: 700;
+            margin: 0 0 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .markdown-body h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            margin: 40px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .markdown-body h3 {
+            font-size: 1.25em;
+            font-weight: 600;
+            margin: 32px 0 12px;
+        }
+
+        .markdown-body p { margin: 0 0 16px; }
+
+        .markdown-body a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .markdown-body a:hover { text-decoration: underline; }
+
+        .markdown-body ul, .markdown-body ol {
+            margin: 0 0 16px;
+            padding-left: 24px;
+        }
+
+        .markdown-body li { margin-bottom: 4px; }
+
+        .markdown-body blockquote {
+            border-left: 3px solid var(--accent);
+            padding: 8px 16px;
+            margin: 0 0 16px;
+            background: var(--accent-muted);
+            border-radius: 0 6px 6px 0;
+            color: var(--text-secondary);
+        }
+
+        .markdown-body pre {
+            background: var(--code-bg);
+            border: 1px solid var(--code-border);
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+            margin: 0 0 16px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .markdown-body code {
+            font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+            font-size: 0.875em;
+        }
+
+        .markdown-body :not(pre) > code {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .markdown-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 0 16px;
+            font-size: 14px;
+        }
+
+        .markdown-body th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            text-align: left;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+        }
+
+        .markdown-body td {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+        }
+
+        .markdown-body tr:nth-child(even) { background: var(--bg-secondary); }
+
+        .markdown-body hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 32px 0;
+        }
+
+        .markdown-body strong { color: var(--text-primary); }
+
+        /* Anchor links */
+        .anchor-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            margin-left: 8px;
+            opacity: 0;
+            transition: opacity 0.15s;
+            font-size: 0.8em;
+        }
+        h1:hover .anchor-link,
+        h2:hover .anchor-link,
+        h3:hover .anchor-link { opacity: 1; }
+
+        /* Config cards */
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .config-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .config-card-title {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .config-card-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .config-card-detail {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        /* Syntax highlighting */
+        .highlight .k, .highlight .kn, .highlight .kd { color: #ff7b72; }
+        .highlight .s, .highlight .s1, .highlight .s2 { color: #a5d6ff; }
+        .highlight .c, .highlight .c1, .highlight .cm { color: var(--text-muted); font-style: italic; }
+        .highlight .n, .highlight .na { color: var(--text-primary); }
+        .highlight .nf { color: #d2a8ff; }
+        .highlight .nb { color: #79c0ff; }
+        .highlight .mi, .highlight .mf { color: #79c0ff; }
+        .highlight .o { color: #ff7b72; }
+        .highlight .p { color: var(--text-secondary); }
+        .highlight .nn { color: #ffa657; }
+
+        [data-theme="light"] .highlight .k,
+        [data-theme="light"] .highlight .kn,
+        [data-theme="light"] .highlight .kd { color: #cf222e; }
+        [data-theme="light"] .highlight .s,
+        [data-theme="light"] .highlight .s1,
+        [data-theme="light"] .highlight .s2 { color: #0a3069; }
+        [data-theme="light"] .highlight .nf { color: #8250df; }
+        [data-theme="light"] .highlight .nb { color: #0550ae; }
+        [data-theme="light"] .highlight .mi,
+        [data-theme="light"] .highlight .mf { color: #0550ae; }
+        [data-theme="light"] .highlight .nn { color: #953800; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+                box-shadow: 4px 0 24px rgba(0,0,0,0.3);
+            }
+            .main {
+                margin-left: 0;
+                max-width: 100%;
+                padding: 24px 16px;
+            }
+            .menu-btn { display: block; }
+            .header-badge { display: none; }
+        }
+
+        /* Overlay for mobile sidebar */
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 40;
+        }
+        .overlay.active { display: block; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+            <a href="/" class="header-logo">Ada</a>
+            <span class="header-badge">Always-On AI Assistant</span>
+        </div>
+        <div class="header-right">
+            <span class="status-dot" title="Documentation server running"></span>
+            <button class="btn" onclick="toggleTheme()" id="themeBtn" title="Toggle theme">
+                <span id="themeIcon">☀</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <div class="layout">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="search-box">
+                <input type="text" placeholder="Search docs..." id="searchInput" oninput="filterNav()">
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Navigation</div>
+                {% for item in toc %}
+                <a class="nav-item level-{{ item.level }}" href="#{{ item.slug }}" onclick="closeMobileSidebar()">
+                    {{ item.title }}
+                </a>
+                {% endfor %}
+            </div>
+
+            {% if config %}
+            <div class="sidebar-section">
+                <div class="sidebar-title">Quick Info</div>
+                {% if config.get('typer_assistant') %}
+                <div style="padding: 8px 12px; font-size: 12px; color: var(--text-secondary);">
+                    <div>Wake Word: <strong style="color: var(--accent);">{{ config.typer_assistant.assistant_name }}</strong></div>
+                    <div>Brain: <strong>{{ config.typer_assistant.brain }}</strong></div>
+                    <div>Voice: <strong>{{ config.typer_assistant.voice }}</strong></div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main">
+            <div class="content">
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('guide', this)">User Guide</button>
+                    <button class="tab" onclick="switchTab('readme', this)">README</button>
+                    <button class="tab" onclick="switchTab('status', this)">Status</button>
+                </div>
+
+                <!-- User Guide Tab -->
+                <div class="tab-content active" id="tab-guide">
+                    <div class="markdown-body">
+                        {{ guide_html }}
+                    </div>
+                </div>
+
+                <!-- README Tab -->
+                <div class="tab-content" id="tab-readme">
+                    <div class="markdown-body">
+                        {{ readme_html }}
+                    </div>
+                </div>
+
+                <!-- Status Tab -->
+                <div class="tab-content" id="tab-status">
+                    <h1 style="margin-bottom: 24px;">System Status</h1>
+
+                    <div class="config-grid">
+                        {% if config.get('typer_assistant') %}
+                        <div class="config-card">
+                            <div class="config-card-title">Typer Assistant</div>
+                            <div class="config-card-value">{{ config.typer_assistant.assistant_name }}</div>
+                            <div class="config-card-detail">
+                                Brain: {{ config.typer_assistant.brain }}<br>
+                                Voice: {{ config.typer_assistant.voice }}<br>
+                                STT: {{ config.typer_assistant.ears }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if config.get('base_assistant') %}
+                        <div class="config-card">
+                            <div class="config-card-title">Base Assistant</div>
+                            <div class="config-card-value">{{ config.base_assistant.assistant_name }}</div>
+                            <div class="config-card-detail">
+                                Brain: {{ config.base_assistant.brain }}<br>
+                                Voice: {{ config.base_assistant.voice }}<br>
+                                STT: {{ config.base_assistant.ears }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="config-card">
+                            <div class="config-card-title">Documentation Server</div>
+                            <div class="config-card-value" style="color: var(--green);">Running</div>
+                            <div class="config-card-detail">
+                                Port: {{ config.get('web_port', 8080) }}<br>
+                                Container: Docker
+                            </div>
+                        </div>
+
+                        <div class="config-card">
+                            <div class="config-card-title">Files</div>
+                            <div class="config-card-value" id="file-count">-</div>
+                            <div class="config-card-detail" id="file-detail">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Theme toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            document.getElementById('themeIcon').textContent = next === 'dark' ? '☀' : '☾';
+        }
+
+        // Restore saved theme
+        const saved = localStorage.getItem('theme');
+        if (saved) {
+            document.documentElement.setAttribute('data-theme', saved);
+            document.getElementById('themeIcon').textContent = saved === 'dark' ? '☀' : '☾';
+        }
+
+        // Sidebar toggle (mobile)
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('active');
+        }
+
+        function closeMobileSidebar() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('active');
+        }
+
+        // Tab switching
+        function switchTab(name, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + name).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        // Sidebar search/filter
+        function filterNav() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            document.querySelectorAll('.nav-item').forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+
+        // Active section highlighting on scroll
+        const headings = document.querySelectorAll('.markdown-body h1[id], .markdown-body h2[id], .markdown-body h3[id]');
+        const navItems = document.querySelectorAll('.nav-item');
+
+        function updateActiveNav() {
+            let current = '';
+            headings.forEach(h => {
+                const top = h.getBoundingClientRect().top;
+                if (top < 120) current = h.id;
+            });
+            navItems.forEach(item => {
+                const href = item.getAttribute('href');
+                if (href && href.substring(1) === current) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+        window.addEventListener('scroll', updateActiveNav);
+
+        // Load status data
+        fetch('/api/status')
+            .then(r => r.json())
+            .then(data => {
+                const files = data.files;
+                const count = Object.values(files).filter(Boolean).length;
+                document.getElementById('file-count').textContent = count + '/' + Object.keys(files).length;
+                const detail = Object.entries(files)
+                    .map(([k, v]) => k.replace(/_/g, ' ') + ': ' + (v ? 'Found' : 'Missing'))
+                    .join('<br>');
+                document.getElementById('file-detail').innerHTML = detail;
+            })
+            .catch(() => {
+                document.getElementById('file-count').textContent = '?';
+                document.getElementById('file-detail').textContent = 'Could not load status';
+            });
+    </script>
+</body>
+</html>

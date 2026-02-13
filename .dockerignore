@@ -1,0 +1,12 @@
+.git
+.env
+__pycache__
+*.pyc
+.pytest_cache
+output/
+uv.lock
+.venv
+.python-version
+tests/
+check.py
+*.sh

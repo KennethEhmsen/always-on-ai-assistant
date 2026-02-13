@@ -1,0 +1,24 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ada-docs
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      - PORT=8080
+      - FLASK_DEBUG=${FLASK_DEBUG:-false}
+    volumes:
+      # Mount docs for live updates (optional - remove for static builds)
+      - ./USER_GUIDE.md:/app/USER_GUIDE.md:ro
+      - ./README.md:/app/README.md:ro
+      - ./assistant_config.yml:/app/assistant_config.yml:ro
+      - ./scratchpad.md:/app/scratchpad.md:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/api/status')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
